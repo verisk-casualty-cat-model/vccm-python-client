@@ -13,7 +13,6 @@ create_events = True
 default_params = {
     "lossByAY": False,
     "businessAsUsual": False,
-    "perturbations": False,
 }
 
 

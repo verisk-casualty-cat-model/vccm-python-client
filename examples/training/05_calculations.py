@@ -25,7 +25,7 @@ request_dict = {
                 "exportType": "aal",
                 "parameters": {
                     "projections": ["portfolio"],
-                    "perspectives": ["economicLoss"]
+                    "perspectives": ["grossLoss"]
                 }
             }
         ],
@@ -51,7 +51,7 @@ request_object = ActivitySubmitRequest(
                 exportType=OutputExportType.AAL,
                 parameters=OutputItemParameters(
                     projections=[OutputProjection.PORTFOLIO],
-                    perspectives=[OutputPerspective.ECONOMIC_LOSS]
+                    perspectives=[OutputPerspective.GROSS_LOSS]
                 )
             )
         ],
