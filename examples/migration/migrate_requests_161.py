@@ -13,7 +13,6 @@ asset_params = [
     "minimumGroundup",
     "numberOfRuns",
     "randomSeed",
-    "perturbations",
     "lossByAY",
     "businessAsUsual",
     "portfolioReferenceYear",

@@ -18,9 +18,7 @@ logger.setLevel("INFO")
 
 
 prefix = "PDCA"
-auth_settings = {
-}
-
+auth_settings = {}
 auth = Auth(
     tenant="",
     role="admin",
