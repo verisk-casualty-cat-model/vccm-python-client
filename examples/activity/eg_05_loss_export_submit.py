@@ -31,7 +31,7 @@ def main():
                     exportType=OutputExportType.AAL,
                     parameters=OutputItemParameters(
                         projections=[OutputProjection.INDUSTRY],
-                        perspectives=[OutputPerspective.DEFENSE_LOSS,
+                        perspectives=[OutputPerspective.ECONOMIC_LOSS, OutputPerspective.NON_ECONOMIC_LOSS, OutputPerspective.DEFENSE_LOSS,
                                       OutputPerspective.GROSS_LOSS]
                     )
                 )
