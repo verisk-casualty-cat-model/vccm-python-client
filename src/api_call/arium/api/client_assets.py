@@ -1,12 +1,7 @@
 import hashlib
-import json
 from typing import Optional, List, Dict, TYPE_CHECKING, Union
 
 from api_call.arium.api import request
-from api_call.arium.util.perturbations import (
-    PerturbationsParameters,
-    add_perturbations_parameters_to_event,
-)
 from config.constants import (
     COLLECTION_PORTFOLIOS,
     COLLECTION_EVENTS,
@@ -222,26 +217,6 @@ class EventsClient(AssetsClient):
             collection=self.collection,
             asset_id=asset_id,
         )
-
-    def update_perturbations(
-        self,
-        parameters: PerturbationsParameters,
-        asset_name: str = None,
-        asset_id: str = None,
-    ):
-        if asset_id is None and asset_name is None:
-            raise AttributeError("Please define asset_id or asset_name!")
-
-        if asset_id is None:
-            asset_info = self.get_by_name(asset_name).pop()
-            asset_id = asset_info["id"]
-        else:
-            asset_info = self.get(asset_id)
-            asset_name = asset_info["name"]
-
-        event = json.loads(self.get_data(asset_id))
-        add_perturbations_parameters_to_event(parameters, event)
-        return self.create(asset_name, event)
 
 
 class SizesClient(AssetsClient):

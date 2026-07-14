@@ -48,7 +48,7 @@ class TestActivityModels(unittest.TestCase):
                         exportType=OutputExportType.AAL,
                         parameters=OutputItemParameters(
                             projections=[OutputProjection.PORTFOLIO],
-                            perspectives=[OutputPerspective.ECONOMIC_LOSS]
+                            perspectives=[OutputPerspective.GROSS_LOSS]
                         )
                     )
                 ],
@@ -74,7 +74,7 @@ class TestActivityModels(unittest.TestCase):
                         "exportType": "aal",
                         "parameters": {
                             "projections": ["portfolio"],
-                            "perspectives": ["economicLoss"]
+                            "perspectives": ["grossLoss"]
                         }
                     }
                 ],

@@ -112,8 +112,6 @@ class OutputProjection(Enum):
 
 
 class OutputPerspective(Enum):
-    ECONOMIC_LOSS = "economicLoss"
-    NON_ECONOMIC_LOSS = "nonEconomicLoss"
     DEFENSE_LOSS = "defenseLoss"
     GROSS_LOSS = "grossLoss"
 
