@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import List, Dict
 
 from api_call.arium.util.currency_table import CurrencyTable
 
@@ -81,10 +81,7 @@ class AnalysisAsset:
         settings = {
             k.lower().replace("_", ""): v for k, v in kwargs.get("settings", {}).items()
         }
-        self.minimum_groundup = settings.get("minimumGroundup".lower())
         self.number_of_runs = settings.get("numberOfRuns".lower())
-        self.random_seed = settings.get("randomSeed".lower())
-        self.perturbations = settings.get("perturbations".lower())
         self.loss_by_ay = settings.get("lossByAY".lower())
         self.business_as_usual = settings.get("businessAsUsual".lower())
         self.portfolio_reference_year = settings.get("portfolioReferenceYear".lower())
@@ -104,47 +101,8 @@ class AnalysisAsset:
         }
         self.groups[group_index]["events"].append(event)
 
-    def create_group(
-            self,
-            group_name: str = "",
-            events: List[str] = None,
-            event_titles: List[str] = None,
-            equal_weighted: Optional[bool] = None,
-            freq_param_key: Optional[str] = None,
-            frequency: Optional[float] = None,
-    ):
-        settings = {
-            "frequency": frequency,
-            "equalWeighted": equal_weighted,
-            "freqParamKey": freq_param_key,
-        }
-        if events is None:
-            events_list = []
-        elif events and event_titles is None:
-            events_list = [{"ref": e} for e in events]
-        else:
-            events_list = [
-                {"ref": e, "title": title} for e, title in zip(events, event_titles)
-            ]
-        group = {
-            "title": group_name,
-            "settings": {k: v for k, v in settings.items() if v is not None},
-            "scenarios": events_list,
-        }
-        self.groups.append(group)
-        return len(self.groups) - 1  # new group index
-
-    def set_minimum_groundup(self, minimum_groundup: float):
-        self.minimum_groundup = minimum_groundup
-
     def set_number_of_runs(self, number_of_runs: int):
         self.number_of_runs = number_of_runs
-
-    def set_random_seed(self, random_seed: int):
-        self.random_seed = random_seed
-
-    def set_perturbations(self, perturbations: bool = False):
-        self.perturbations = perturbations
 
     def set_loss_by_ay(self, loss_by_ay: bool = False):
         self.loss_by_ay = loss_by_ay
@@ -160,10 +118,7 @@ class AnalysisAsset:
 
     def get(self):
         settings = {
-            "minimumGroundup": self.minimum_groundup,
             "numberOfRuns": self.number_of_runs,
-            "randomSeed": self.random_seed,
-            "perturbations": self.perturbations,
             "lossByAY": self.loss_by_ay,
             "businessAsUsual": self.business_as_usual,
             "portfolioReferenceYear": self.portfolio_reference_year,
