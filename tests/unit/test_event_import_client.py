@@ -135,13 +135,15 @@ class TestEventImportClient(unittest.TestCase):
         self.assertIs(result, self.mock_api_client.activity.return_value.wait.return_value)
 
     def test_export_csv_posts_ids(self):
-        self.mock_api_client.post_request.return_value = ACCEPTED
+        # the export route answers without the {message, data} envelope
+        self.mock_api_client.post_request.return_value = _response(202, {"activityId": "act-2", "total": 2})
 
         result = self.client.export_csv(("id-1", "id-2"))
 
         self.mock_api_client.post_request.assert_called_once_with(endpoint="/{tenant}/event-import/export",
                                                                   json=["id-1", "id-2"])
-        self.assertEqual(result.activityId, "act-1")
+        self.assertEqual(result.activityId, "act-2")
+        self.assertEqual(result.total, 2)
 
     def test_export_csv_requires_ids(self):
         with self.assertRaises(ValueError):

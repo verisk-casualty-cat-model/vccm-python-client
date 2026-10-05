@@ -23,5 +23,6 @@ class EventImportResponse(DataClassJsonMixin):
     """Response of a queued bulk event import or export. Follow it with ActivityClient.get/wait(activityId)."""
     activityId: str
     total: Optional[int] = None
+    events: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     rejected: List[RejectedEvent] = field(default_factory=list)

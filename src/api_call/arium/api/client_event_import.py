@@ -151,7 +151,9 @@ class EventImportClient:
         return reservation["importId"]
 
     def _queued(self, response, wait: bool, timeout_minutes: int) -> Union[EventImportResponse, Activity]:
-        result = EventImportResponse.from_dict(_content(response, accept=(HTTPStatus.ACCEPTED,))["data"])
+        body = _content(response, accept=(HTTPStatus.ACCEPTED,))
+        # import answers {message, data: {...}}, export answers {activityId, total} without the envelope
+        result = EventImportResponse.from_dict(body.get("data", body))
         for warning in result.warnings:
             logger.warning(warning)
         if result.rejected:
