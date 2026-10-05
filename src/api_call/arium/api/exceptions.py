@@ -12,6 +12,28 @@ class AriumAPACResponseException(Exception):
         self.response = response
 
 
+class EventImportException(Exception):
+    """Bulk event import / export request rejected by the server, e.g. CSV rows failing validation."""
+
+    def __init__(self, status_code: int, message: str, errors: list | None = None):
+        self.status_code = status_code
+        self.errors = errors or []
+        details = "".join(f"\n\t{error}" for error in self.errors)
+        super().__init__(f"{status_code} - {message}{details}")
+
+    @classmethod
+    def from_response(cls, response) -> "EventImportException":
+        # Error body is {"message": ..., "details": {"errors": [...]}}; S3 answers with XML instead
+        try:
+            content = json.loads(response.content)
+            message = content.get("message") or response.reason
+            errors = (content.get("details") or {}).get("errors", [])
+        except (ValueError, AttributeError):
+            message = response.text or response.reason
+            errors = []
+        return cls(response.status_code, message, errors)
+
+
 class AriumAPACException(Exception):
     def __init__(self, exception, message, **kwargs):
         if isinstance(exception, AriumAPACException):

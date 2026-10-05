@@ -73,11 +73,18 @@ class Report(DataClassJsonMixin):
 class ActivityType(Enum):
     CALCULATION = "calculation"
     LOSS_EXPORT = "lossExport"
+    # Created by the bulk event import / export endpoints (EventImportClient), never via submit()
+    EVENT_IMPORT = "eventImport"
+    EVENT_EXPORT = "eventExport"
+    # Name of EVENT_IMPORT before v1.2 - still returned for older activities
+    CSV_IMPORT = "csvImport"
 
 
 class ActivityMode(Enum):
     DETERMINISTIC = "deterministic"
     STOCHASTIC = "stochastic"
+    BULK_IMPORT = "bulkImport"
+    BULK_EXPORT = "bulkExport"
 
 
 class ActivityStatus(Enum):
@@ -86,7 +93,10 @@ class ActivityStatus(Enum):
     CANCELING = "canceling"
     CANCELED = "canceled"
     COMPLETED = "completed"
+    # Finished, but part of the input was rejected or failed (e.g. a partial bulk import)
+    COMPLETED_WITH_EXCEPTIONS = "completedWithExceptions"
     FAILED = "failed"
+    NO_CLAIMS_GENERATED = "noClaimsGenerated"
 
 
 class OutputExportType(Enum):
@@ -191,6 +201,11 @@ class Activity(DataClassJsonMixin):
     startTime: Optional[str] = None
     progress: Optional[int] = None
     endTime: Optional[str] = None
+    # Bulk event import / export only
+    progressDetails: Optional[dict] = None
+    activityDetails: Optional[Any] = None
+    importLogKey: Optional[str] = None
+    errorCsvKey: Optional[str] = None
 
     def _fetch_reports(self) -> List[Report]:
         # is replaced in the place in activity client by method injection

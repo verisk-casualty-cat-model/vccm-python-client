@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 
 import requests
 
-from api_call.arium.api.exceptions import AriumAPACResponseException, exception_handler
+from api_call.arium.api.exceptions import AriumAPACResponseException, EventImportException, exception_handler
 from config.get_logger import get_logger
 
 if TYPE_CHECKING:
@@ -104,6 +104,25 @@ def get_content(
         return content
     else:
         raise AriumAPACResponseException(response)
+
+
+def get_redirect_content(client: "APIClient", endpoint: str) -> Optional[bytes]:
+    """
+    Downloads a file from an endpoint answering 302 with a presigned URL. The URL carries its own
+    authorization, so it is fetched without the Authorization header.
+    Returns None when the endpoint answers 404 (no such file).
+    """
+    response = client.get_request(endpoint=endpoint, allow_redirects=False)
+    if response.status_code == HTTPStatus.NOT_FOUND:
+        return None
+    location = response.headers.get("Location")
+    if not (HTTPStatus.MULTIPLE_CHOICES <= response.status_code < HTTPStatus.BAD_REQUEST and location):
+        raise EventImportException.from_response(response)
+
+    download = requests.get(url=location, verify=client.verify)
+    if download.status_code != HTTPStatus.OK:
+        raise EventImportException.from_response(download)
+    return download.content
 
 
 def read_csv(data, delimiter: str = ","):

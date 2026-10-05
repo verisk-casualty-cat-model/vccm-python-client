@@ -3,12 +3,13 @@ from datetime import datetime, timedelta
 from enum import Enum
 from io import BytesIO
 from types import MethodType
-from typing import List
+from typing import List, Optional
 
 import requests
 
-from api_call.arium.api.request import get_content
-from api_call.arium.model.activity import ActivityList, Activity, ActivitySubmitRequest, ActivityStatus, Report
+from api_call.arium.api.request import get_content, get_redirect_content
+from api_call.arium.model.activity import ActivityList, Activity, ActivitySubmitRequest, ActivityStatus, \
+    ActivityType, Report
 from config.get_logger import get_logger
 
 logger = get_logger(__name__)
@@ -75,7 +76,6 @@ class ActivityClient:
                timeout_minutes: int = 60) -> Activity:
         endpoint = f"/{{tenant}}/activity"
         data = activity_submit_request.to_dict()
-        print(data)
         response = self._client.post_request(endpoint=endpoint, json=data)
         content: dict = get_content(response=response, get_from_location=False)
 
@@ -110,6 +110,10 @@ class ActivityClient:
                     return activity
                 case ActivityStatus.COMPLETED:
                     return activity
+                case ActivityStatus.COMPLETED_WITH_EXCEPTIONS:
+                    return activity
+                case ActivityStatus.NO_CLAIMS_GENERATED:
+                    return activity
                 case _:
                     # Continue polling for other statuses (QUEUED, RUNNING, etc.)
                     time.sleep(15)
@@ -142,10 +146,55 @@ class ActivityClient:
         return None
 
     def resubmit(self, activity_id: str) -> str:
+        activity = self.get(activity_id=activity_id)
+        if activity.activityType in _NOT_RESUBMITTABLE:
+            raise ValueError(
+                f"Activity {activity_id} is a bulk event {activity.activityType.value} and cannot be resubmitted. "
+                f"Start a new one with client.event_import()."
+            )
+
         endpoint = f"/{{tenant}}/activity/{activity_id}/resubmit"
         response = self._client.post_request(endpoint=endpoint)
         if not response.status_code == 200:
-            raise Exception(f"Activity cancel failed with status: {response.status_code}")
+            raise Exception(f"Activity resubmit failed with status: {response.status_code}")
 
         response_body = get_content(response=response, get_from_location=False)
         return response_body.get("data", {}).get("activityId")
+
+    def error_csv(self, activity_id: str, errors_only: bool = False) -> Optional[BytesIO]:
+        """
+        Rows a bulk event import rejected, as written in the source CSV, followed by the columns
+        Source Row, Event, Status, Field, Invalid Value and Error Reason.
+        :param errors_only: return only the appended columns
+        :return: the CSV, or None when the import produced none (see Activity.errorCsvKey)
+        """
+        endpoint = f"/{{tenant}}/activity/{activity_id}/error-csv"
+        if errors_only:
+            endpoint += "?variant=errors-only"
+        content = get_redirect_content(self._client, endpoint)
+        return BytesIO(content) if content is not None else None
+
+    def import_log(self, activity_id: str) -> Optional[str]:
+        """
+        Plain text log of a bulk event import: rejected events with reasons and the created events.
+        :return: the log, or None when there is none (see Activity.importLogKey)
+        """
+        content = get_redirect_content(self._client, f"/{{tenant}}/activity/{activity_id}/import-log")
+        return content.decode("utf-8") if content is not None else None
+
+    def export_file(self, activity_id: str, file_name: Optional[str] = None) -> Optional[BytesIO]:
+        """
+        CSV produced by a bulk event export (client.event_import().export_csv()).
+        :param file_name: also save the file there
+        :return: the CSV, or None when the export has no file yet
+        """
+        content = get_redirect_content(self._client, f"/{{tenant}}/activity/{activity_id}/export-file")
+        if content is None:
+            return None
+        if file_name:
+            with open(file_name, "wb") as file:
+                file.write(content)
+        return BytesIO(content)
+
+
+_NOT_RESUBMITTABLE = (ActivityType.EVENT_IMPORT, ActivityType.EVENT_EXPORT, ActivityType.CSV_IMPORT)

@@ -2,12 +2,22 @@ import unittest
 from unittest.mock import MagicMock, patch
 import sys
 import os
+import tempfile
 
 # Ensure src is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../../src')))
 
 from api_call.arium.api.client_activity import ActivityClient
 from api_call.arium.model.activity import Activity, ActivityStatus, ActivitySubmitRequest
+
+
+def _response(status_code, location=None, content=b""):
+    response = MagicMock()
+    response.status_code = status_code
+    response.headers = {"Location": location} if location else {}
+    response.content = content
+    return response
+
 
 class TestActivityClient(unittest.TestCase):
     def setUp(self):
@@ -74,6 +84,64 @@ class TestActivityClient(unittest.TestCase):
         self.mock_api_client.post_request.assert_called_once_with(
             endpoint=f"/{{tenant}}/activity/{activity_id}/cancel"
         )
+
+    def test_wait_stops_on_completed_with_exceptions(self):
+        activity = Activity.from_dict({"activityId": "a", "workspace": "w", "name": "n",
+                                       "status": "completedWithExceptions"})
+        with patch.object(ActivityClient, 'get', return_value=activity) as mock_get, \
+                patch('api_call.arium.api.client_activity.time.sleep') as mock_sleep:
+            result = self.client.wait("a")
+        self.assertIs(result, activity)
+        mock_get.assert_called_once()
+        mock_sleep.assert_not_called()
+
+    @patch('api_call.arium.api.request.requests.get')
+    def test_error_csv_follows_redirect_without_auth(self, mock_requests_get):
+        self.mock_api_client.get_request.return_value = _response(302, location="https://s3/presigned")
+        mock_requests_get.return_value = _response(200, content=b"Event Name,Error Reason\n")
+
+        result = self.client.error_csv("act-1", errors_only=True)
+
+        self.mock_api_client.get_request.assert_called_once_with(
+            endpoint="/{tenant}/activity/act-1/error-csv?variant=errors-only", allow_redirects=False
+        )
+        mock_requests_get.assert_called_once_with(url="https://s3/presigned", verify=self.mock_api_client.verify)
+        self.assertEqual(result.getvalue(), b"Event Name,Error Reason\n")
+
+    def test_error_csv_and_import_log_return_none_on_404(self):
+        self.mock_api_client.get_request.return_value = _response(404)
+        self.assertIsNone(self.client.error_csv("act-1"))
+        self.assertIsNone(self.client.import_log("act-1"))
+        self.assertIsNone(self.client.export_file("act-1"))
+
+    @patch('api_call.arium.api.request.requests.get')
+    def test_import_log_decodes_text(self, mock_requests_get):
+        self.mock_api_client.get_request.return_value = _response(302, location="https://s3/log")
+        mock_requests_get.return_value = _response(200, content="Created: Event Ł".encode("utf-8"))
+        self.assertEqual(self.client.import_log("act-1"), "Created: Event Ł")
+        self.mock_api_client.get_request.assert_called_once_with(
+            endpoint="/{tenant}/activity/act-1/import-log", allow_redirects=False
+        )
+
+    @patch('api_call.arium.api.request.requests.get')
+    def test_export_file_saves_file(self, mock_requests_get):
+        self.mock_api_client.get_request.return_value = _response(302, location="https://s3/export")
+        mock_requests_get.return_value = _response(200, content=b"csv")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "events.csv")
+            result = self.client.export_file("act-1", file_name=path)
+            with open(path, "rb") as f:
+                self.assertEqual(f.read(), b"csv")
+        self.assertEqual(result.getvalue(), b"csv")
+
+    def test_resubmit_rejects_event_import(self):
+        activity = Activity.from_dict({"activityId": "a", "workspace": "w", "name": "n",
+                                       "activityType": "eventImport", "status": "failed"})
+        with patch.object(ActivityClient, 'get', return_value=activity):
+            with self.assertRaises(ValueError):
+                self.client.resubmit("a")
+        self.mock_api_client.post_request.assert_not_called()
+
 
 if __name__ == '__main__':
     unittest.main()

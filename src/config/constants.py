@@ -19,6 +19,16 @@ ENDPOINT_PROPERTIES = CALCULATIONS_LOGIC + "properties"
 ENDPOINT_CALC_CONNECTED_NODES = CALCULATIONS_LOGIC + "connectednodes/{portfolio}"
 ENDPOINT_PROGRAMMES = CALCULATIONS_LOGIC + "programmes"
 
+ENDPOINT_EVENT_IMPORT = "event-import"
+ENDPOINT_EVENT_IMPORT_UPLOADS = "event-import/uploads"
+ENDPOINT_EVENT_IMPORT_TEMPLATE = "event-import/template"
+ENDPOINT_EVENT_EXPORT = "event-import/export"
+
+# Larger CSV files cannot be posted as a request body and go through a presigned S3 upload
+EVENT_IMPORT_INLINE_MAX_BYTES = 4 * 1024 * 1024
+EVENT_IMPORT_CSV_MAX_BYTES = 100 * 1024 * 1024
+EVENT_IMPORT_SCE_MAX_BYTES = 40 * 1024 * 1024
+
 ENDPOINT_CLAIMS = "calculations/logic/{{calculations_id}}/logs/claims/{level}"
 ENDPOINT_LOGS = "calculations/logic/{calculations_id}/logs/logs"
 ENDPOINT_GRAPH = "calculations/logic/{calculations_id}/logs/graph"

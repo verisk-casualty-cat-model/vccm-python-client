@@ -26,6 +26,43 @@ class TestActivityModels(unittest.TestCase):
         self.assertEqual(activity.status, ActivityStatus.RUNNING)
         self.assertEqual(activity.activityType, ActivityType.CALCULATION)
 
+    def test_event_import_activity_from_dict(self):
+        data = {
+            "activityId": "act-456",
+            "workspace": "ws-1",
+            "name": "events.csv",
+            "status": "completedWithExceptions",
+            "activityType": "eventImport",
+            "mode": "bulkImport",
+            "progress": 100,
+            "progressDetails": {"imported": "38/40"},
+            "activityDetails": {"Imported": 38, "Rejected": 2},
+            "errorCsvKey": "event-import/act-456/errors.csv",
+            "importLogKey": "event-import/act-456/import.log",
+        }
+        activity = Activity.from_dict(data)
+        self.assertEqual(activity.status, ActivityStatus.COMPLETED_WITH_EXCEPTIONS)
+        self.assertEqual(activity.activityType, ActivityType.EVENT_IMPORT)
+        self.assertEqual(activity.mode, ActivityMode.BULK_IMPORT)
+        self.assertEqual(activity.activityDetails["Rejected"], 2)
+        self.assertEqual(activity.progressDetails["imported"], "38/40")
+        self.assertEqual(activity.errorCsvKey, "event-import/act-456/errors.csv")
+
+    def test_legacy_and_export_activities_from_dict(self):
+        legacy = Activity.from_dict({"activityId": "a", "workspace": "w", "name": "n",
+                                     "activityType": "csvImport", "status": "failed"})
+        export = Activity.from_dict({"activityId": "b", "workspace": "w", "name": "n",
+                                     "activityType": "eventExport", "mode": "bulkExport",
+                                     "status": "noClaimsGenerated"})
+        self.assertEqual(legacy.activityType, ActivityType.CSV_IMPORT)
+        self.assertEqual(export.activityType, ActivityType.EVENT_EXPORT)
+        self.assertEqual(export.mode, ActivityMode.BULK_EXPORT)
+        self.assertEqual(export.status, ActivityStatus.NO_CLAIMS_GENERATED)
+
+    def test_event_import_cannot_be_submitted(self):
+        with self.assertRaises(ValueError):
+            ActivitySubmitRequest(payload=ActivityPayloadModel(), activityType=ActivityType.EVENT_IMPORT)
+
     def test_activity_to_dict(self):
         activity = Activity(
             activityId="act-123",
