@@ -5,7 +5,7 @@ description = "Arium python client project"
 readme = "README.md"
 requires-python = ">=3.12, <3.14"
 authors = [
-    { name = "arium", email = "AriumSupport@verisk.com" }
+    { name = "arium", email = "casualtycatsupport@verisk.com" }
 ]
 license = "MIT"
 license-files = ["LICENSE"]
