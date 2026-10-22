@@ -15,6 +15,7 @@ from api_call.arium.api.client_assets import (
 )
 from api_call.arium.api.client_calculations import CalculationsClient
 from api_call.arium.api.client_calculations_asset import CalculationsAssetClient
+from api_call.arium.api.client_event_import import EventImportClient
 from api_call.arium.api.client_refdata import RefDataClient
 from api_call.arium.api.pdca_client import PDCAClient
 from api_call.arium.api.request import retry
@@ -32,6 +33,7 @@ class APIClient:
         self._assets_clients = None
         self._calculations_client = None
         self._calculations_asset_client = None
+        self._event_import_client = None
         self._pdca_client = None
         self._refdata_client = None
 
@@ -46,6 +48,7 @@ class APIClient:
             }
             self._calculations_client = CalculationsClient(self)
             self._activity_client = ActivityClient(self)
+            self._event_import_client = EventImportClient(self)
             self._calculations_asset_client = CalculationsAssetClient(self)
             self._refdata_client = RefDataClient(self)
 
@@ -92,6 +95,9 @@ class APIClient:
 
     def activity(self) -> ActivityClient:
         return self._activity_client
+
+    def event_import(self) -> EventImportClient:
+        return self._event_import_client
 
     def refdata(self) -> RefDataClient:
         return self._refdata_client

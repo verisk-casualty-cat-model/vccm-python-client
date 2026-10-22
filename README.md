@@ -1,4 +1,4 @@
-# README VCCM 1.0.1 # 
+# README VCCM 1.2.0 #
 
 ### What is this repository for? ###
 
@@ -164,4 +164,33 @@ client = APIClient(auth=auth)
 client.activity().list()
 ```
 
+### Bulk event import and export ###
 
+Events can be imported in bulk from a CSV built on the template, or from an event library export (`.sce`),
+and exported back to the same CSV format. Each import or export runs as an activity: the call returns
+its id, and `client.activity()` follows it and downloads its files.
+
+```python
+activity = client.event_import().import_csv("events.csv", folder_name="Imported events", wait=True)
+print(activity.status, activity.activityDetails)
+
+if activity.errorCsvKey:
+    errors = client.activity().error_csv(activity.activityId)  # rejected rows with the reasons
+```
+
+* CSV files up to 4 MB are posted directly, larger ones (up to 100 MB) are uploaded to S3 first.
+  `.sce` files (up to 40 MB) are always uploaded.
+* An import ends `completed`, `completedWithExceptions` (some events were rejected) or `failed`.
+* Invalid rows are handled by the workspace's import policy: with `CONTINUE_WHEN_ERROR` (default) the valid events
+  are imported, with `STOP_WHEN_ERROR` nothing is. The policy is set per workspace by the support team.
+* Import and export activities cannot be resubmitted - start a new one instead.
+
+Examples in `examples/events/`:
+
+| Example | Description |
+|---|---|
+| `eg_13_bulk_import_csv.py` | import a CSV into a new folder, save the rejected rows |
+| `eg_14_import_sce.py` | import an event library export (`.sce`) |
+| `eg_15_import_template.py` | download the CSV template |
+| `eg_16_import_errors.py` | download the error CSV and import log of an import |
+| `eg_17_bulk_export_csv.py` | export a folder of events to CSV |
